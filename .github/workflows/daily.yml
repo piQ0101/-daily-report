@@ -1,7 +1,7 @@
 name: daily-push
 on:
   schedule:
-    - cron: '0 0 * * *'   # 每天 UTC 0:00，即北京时间早上 8:00
+    - cron: '0 23 * * *'   # 每天 UTC 0:00，即北京时间早上 8:00
   workflow_dispatch:        # 允许你手动点按钮测试
 
 jobs:
