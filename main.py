@@ -1,7 +1,7 @@
 import requests
 import os
 
-token = os.environ['sendkey']
+token = os.environ['SENDKEY']
 url = f"https://sctapi.ftqq.com/{token}.send"
 
 data = {
