@@ -1,7 +1,8 @@
 import requests
+import os
 
-sendkey = 'SCT472354T6RHnd6IaYaQAVeiJblBSdpAx'
-url = f"https://sctapi.ftqq.com/{sendkey}.send"
+token = os.environ['sendkey']
+url = f"https://sctapi.ftqq.com/{token}.send"
 
 data = {
     "title": "任务完成通知",
