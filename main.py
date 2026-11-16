@@ -1,20 +1,13 @@
-import os
 import requests
 
-TOKEN = os.environ["PUSHPLUS_TOKEN"]
-URL = "https://www.pushplus.plus/send"
-
-# ====== 这里放你的抓取逻辑 ======
-# 你现在不用改，先让它发一条测试消息
-content = "这是一条测试消息，说明 GitHub Actions 跑通了。"
-# ==============================
+sendkey = 'SCT472354T6RHnd6IaYaQAVeiJblBSdpAx'
+url = f"https://sctapi.ftqq.com/{sendkey}.send"
 
 data = {
-    "token": TOKEN,
-    "title": "每日汇总",
-    "content": content,
-    "template": "txt"
+    "title": "任务完成通知",
+    "desp": "你的脚本已经跑完了，一切正常。"
 }
 
-resp = requests.post(URL, json=data)
-print(resp.text)
+
+response = requests.post(url, data=data)
+print(response.json())
