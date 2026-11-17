@@ -1,8 +1,8 @@
 name: daily-push
 on:
   schedule:
-    - cron: '0 23 * * *'   # 每天 UTC 0:00，即北京时间早上 8:00
-  workflow_dispatch:        # 允许你手动点按钮测试
+    - cron: '30 0,8 * * *'   # 每天 UTC 0:30 和 8:30，即北京时间 8:30 和 16:30
+  workflow_dispatch:         # 允许你手动点按钮测试
 
 jobs:
   run:
@@ -15,4 +15,4 @@ jobs:
       - run: pip install requests
       - run: python main.py
         env:
-          PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
+          SENDKEY: ${{ secrets.SENDKEY }}
