@@ -2,7 +2,8 @@ import requests
 import time
 import math
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 # ============================================================
 # 配置
@@ -12,6 +13,7 @@ FORECAST_DAYS = 3
 UPSTREAM_OFFSETS_KM = [80, 160]
 MAX_RETRIES = 2
 TIMEOUT = (8, 40)
+TZ_BJ = ZoneInfo("Asia/Shanghai")  # 固定北京时间时区，彻底解决系统UTC时区问题
 
 FORECAST_URLS = [
     "https://api.open-meteo.com/v1/forecast",
@@ -95,7 +97,8 @@ def fetch_ensemble_cloud(lat, lon):
 def parse_hourly(data, var):
     if data is None or var not in data.get("hourly", {}):
         return {}
-    return {datetime.strptime(t, "%Y-%m-%dT%H:%M"): v
+    # 逐小时数据统一加上北京时间时区，避免与系统UTC时间混用
+    return {datetime.strptime(t, "%Y-%m-%dT%H:%M").replace(tzinfo=TZ_BJ): v
             for t, v in zip(data["hourly"]["time"], data["hourly"][var])}
 
 
@@ -247,8 +250,8 @@ def confidence_from_ensemble(ensemble_data, dt):
     try:
         times = ensemble_data["hourly"]["time"]
         idx = min(range(len(times)),
-                  key=lambda i: abs(datetime.strptime(times[i], "%Y-%m-%dT%H:%M") - dt))
-        target = datetime.strptime(times[idx], "%Y-%m-%dT%H:%M")
+                  key=lambda i: abs(datetime.strptime(times[i], "%Y-%m-%dT%H:%M").replace(tzinfo=TZ_BJ) - dt))
+        target = datetime.strptime(times[idx], "%Y-%m-%dT%H:%M").replace(tzinfo=TZ_BJ)
         if abs((target - dt).total_seconds()) > 7200:
             return "中（时间偏差大）"
 
@@ -308,15 +311,24 @@ def fmt(x, suffix="", d=0):
 # 主流程
 # ============================================================
 def main():
+    # 打印执行时间日志，方便后续在Actions里核对时区是否正确
+    now_bj = datetime.now(TZ_BJ)
+    now_utc = datetime.now(timezone.utc)
+    print(f"=== 脚本执行时间（北京时间）：{now_bj.strftime('%Y-%m-%d %H:%M:%S')} ===")
+    print(f"=== 脚本执行时间（UTC）：{now_utc.strftime('%Y-%m-%d %H:%M:%S')} ===")
+
     base = fetch_batch_forecast([LATITUDE], [LONGITUDE], models="ecmwf_ifs025")
     base_w = base if isinstance(base, dict) else base[0]
 
     events = []
     for rise_s, set_s in zip(base_w["daily"]["sunrise"], base_w["daily"]["sunset"]):
-        events.append(("朝霞", datetime.strptime(rise_s, "%Y-%m-%dT%H:%M"), 90.0))
-        events.append(("晚霞", datetime.strptime(set_s, "%Y-%m-%dT%H:%M"), 270.0))
+        # 日出日落时间统一绑定北京时间时区
+        rise_dt = datetime.strptime(rise_s, "%Y-%m-%dT%H:%M").replace(tzinfo=TZ_BJ)
+        set_dt = datetime.strptime(set_s, "%Y-%m-%dT%H:%M").replace(tzinfo=TZ_BJ)
+        events.append(("朝霞", rise_dt, 90.0))
+        events.append(("晚霞", set_dt, 270.0))
 
-    now = datetime.now()
+    now = now_bj
     events = [(lab, dt, az) for lab, dt, az in events
               if now <= dt <= now + timedelta(hours=48)]
 
